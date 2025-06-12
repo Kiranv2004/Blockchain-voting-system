@@ -1,0 +1,4 @@
+flask
+werkzeug
+web3
+python-dotenv 
