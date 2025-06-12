@@ -1,1 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voting System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #e0e7ff 0%, #f8fafc 100%);
+            min-height: 100vh;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .container {
+            max-width: 1000px;
+            margin-top: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            padding: 40px 30px 30px 30px;
+            backdrop-filter: blur(8px);
+        }
+        h1 {
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: #1e293b;
+            margin-bottom: 1.5rem;
+            font-size: 2.5rem;
+        }
+        .wallet-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 32px;
+            padding: 16px;
+            background: rgba(241, 245, 249, 0.5);
+            border-radius: 16px;
+            backdrop-filter: blur(4px);
+        }
+        #connectWalletBtn {
+            font-weight: 600;
+            font-size: 1.1rem;
+            padding: 12px 28px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            border: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        #connectWalletBtn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.2);
+        }
+        #walletAddress {
+            font-family: 'Fira Mono', monospace;
+            font-size: 0.95rem;
+            color: #4f46e5;
+            background: rgba(241, 245, 249, 0.8);
+            border-radius: 8px;
+            padding: 8px 16px;
+            border: 1px solid rgba(79, 70, 229, 0.1);
+        }
+        .info-section {
+            background: rgba(241, 245, 249, 0.6);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+            border: 1px solid rgba(79, 70, 229, 0.1);
+            backdrop-filter: blur(4px);
+        }
+        .info-section strong {
+            color: #4f46e5;
+            font-weight: 600;
+        }
+        #addCandidateSection {
+            background: rgba(248, 250, 252, 0.8);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 32px;
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.08);
+            border: 1px solid rgba(79, 70, 229, 0.1);
+        }
+        #addCandidateBtn {
+            font-weight: 600;
+            border-radius: 10px;
+            padding: 10px 24px;
+            background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
+            border: none;
+            transition: transform 0.2s;
+        }
+        #addCandidateBtn:hover {
+            transform: translateY(-2px);
+        }
+        .candidate-card {
+            background: linear-gradient(120deg, rgba(241, 245, 249, 0.8) 60%, rgba(224, 231, 255, 0.8) 100%);
+            border-radius: 20px;
+            padding: 28px 24px 24px 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.08);
+            transition: all 0.3s ease;
+            border: 1px solid rgba(79, 70, 229, 0.1);
+            backdrop-filter: blur(4px);
+        }
+        .candidate-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 12px 32px rgba(99, 102, 241, 0.15);
+        }
+        .candidate-card h3 {
+            color: #1e293b;
+            font-weight: 700;
+            font-size: 1.4rem;
+            margin-bottom: 1rem;
+        }
+        .vote-count {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #4f46e5;
+            margin-bottom: 16px;
+            background: rgba(79, 70, 229, 0.1);
+            padding: 8px 16px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+        .vote-btn {
+            width: 100%;
+            font-weight: 600;
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            border: none;
+            color: #fff;
+            border-radius: 12px;
+            padding: 12px;
+            transition: all 0.3s ease;
+            font-size: 1.1rem;
+        }
+        .vote-btn:hover {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+        .badge.bg-secondary {
+            background: rgba(199, 210, 254, 0.8) !important;
+            color: #3730a3 !important;
+            font-size: 1rem;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+        .alert {
+            margin-top: 24px;
+            font-size: 1.05rem;
+            border-radius: 12px;
+            padding: 16px 20px;
+            border: none;
+        }
+        .alert-success {
+            background: rgba(34, 197, 94, 0.1);
+            color: #16a34a;
+        }
+        .alert-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: #dc2626;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 32px;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+            color: #4f46e5;
+        }
+        .table-responsive {
+            border-radius: 16px;
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.08);
+            overflow: hidden;
+            border: 1px solid rgba(79, 70, 229, 0.1);
+        }
+        .table {
+            margin-bottom: 0;
+        }
+        .table-primary {
+            background: rgba(79, 70, 229, 0.1) !important;
+        }
+        .table-primary th {
+            color: #1e293b;
+            font-weight: 600;
+            padding: 16px;
+        }
+        .table td {
+            padding: 16px;
+            vertical-align: middle;
+        }
+        .form-control {
+            border-radius: 10px;
+            padding: 12px 16px;
+            border: 1px solid rgba(79, 70, 229, 0.2);
+            transition: all 0.3s ease;
+        }
+        .form-control:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px 16px;
+                margin-top: 20px;
+            }
+            .candidate-card {
+                padding: 20px 16px;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center mb-4">Blockchain Voting System</h1>
+        <div class="wallet-section mb-4">
+            <button id="connectWalletBtn" class="btn btn-success">Connect Wallet</button>
+            <span id="walletAddress" class="ms-3"></span>
+        </div>
+        <div class="info-section mb-3">
+            <strong>Contract Owner:</strong> <span id="ownerAddress"></span><br>
+            <strong>Total Candidates:</strong> <span id="candidateCount"></span><br>
+            <strong id="votingStatus"></strong>
+        </div>
+        <div class="alert alert-success" role="alert" id="successAlert" style="display:none;">
+            Vote cast successfully!
+        </div>
+        <div class="alert alert-danger" role="alert" id="errorAlert" style="display:none;">
+            Error casting vote. Please try again.
+        </div>
+        <div class="loading" id="loading" style="display:none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+        <div id="addCandidateSection" style="display:none;" class="mb-4">
+            <h4 class="mb-3">Add Candidate (Owner Only)</h4>
+            <div class="input-group mb-2">
+                <input type="text" id="candidateName" class="form-control" placeholder="Candidate Name">
+            </div>
+            <div class="input-group mb-3">
+                <input type="text" id="candidateAddress" class="form-control" placeholder="Candidate Address (0x...)">
+                <button class="btn btn-success" id="addCandidateBtn" onclick="addCandidate()">Add</button>
+            </div>
+        </div>
+        <div class="row" id="candidatesContainer"></div>
+        <div id="resultSection" style="display:none;" class="mt-5">
+            <h4 class="mb-3"><b>Results</b></h4>
+            <div id="resultsTable"></div>
+        </div>
+    </div>
+    <script>
+        const CONTRACT_ADDRESS = "0xDc3F63dD0C54177Ebec57d42BF95A1ac9B3e6a33";
+        const CONTRACT_ABI = [{
+        "inputs": [],
+        "stateMutability": "nonpayable",
+        "type": "constructor"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "candidateId",
+                "type": "uint256"
+            },
+            {
+                "indexed": false,
+                "internalType": "string",
+                "name": "name",
+                "type": "string"
+            }
+        ],
+        "name": "CandidateAdded",
+        "type": "event"
+    },
+    {
+        "anonymous": false,
+        "inputs": [
+            {
+                "indexed": false,
+                "internalType": "uint256",
+                "name": "candidateId",
+                "type": "uint256"
+            }
+        ],
+        "name": "VoteCast",
+        "type": "event"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "string",
+                "name": "_name",
+                "type": "string"
+            }
+        ],
+        "name": "addCandidate",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "name": "candidates",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "id",
+                "type": "uint256"
+            },
+            {
+                "internalType": "string",
+                "name": "name",
+                "type": "string"
+            },
+            {
+                "internalType": "uint256",
+                "name": "voteCount",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "candidateCount",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_candidateId",
+                "type": "uint256"
+            }
+        ],
+        "name": "getCandidate",
+        "outputs": [
+            {
+                "internalType": "string",
+                "name": "name",
+                "type": "string"
+            },
+            {
+                "internalType": "uint256",
+                "name": "voteCount",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "getCandidateCount",
+        "outputs": [
+            {
+                "internalType": "uint256",
+                "name": "",
+                "type": "uint256"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "hasVoted",
+        "outputs": [
+            {
+                "internalType": "bool",
+                "name": "",
+                "type": "bool"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [],
+        "name": "owner",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "inputs": [
+            {
+                "internalType": "uint256",
+                "name": "_candidateId",
+                "type": "uint256"
+            }
+        ],
+        "name": "vote",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+    }
+]
 
+        let provider, signer, contract, userAddress, contractOwner;
+
+        async function connectWallet() {
+            if (typeof window.ethereum === 'undefined') {
+                alert('MetaMask not detected! Please install MetaMask extension.');
+                return;
+            }
+            try {
+                provider = new ethers.providers.Web3Provider(window.ethereum, "any");
+                await provider.send("eth_requestAccounts", []);
+                signer = provider.getSigner();
+                userAddress = await signer.getAddress();
+                document.getElementById('walletAddress').textContent = userAddress;
+                document.getElementById('connectWalletBtn').textContent = "Connected";
+                document.getElementById('connectWalletBtn').disabled = true;
+                contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+                await updateOwnerAndStatus();
+                await loadCandidates();
+            } catch (err) {
+                alert('Connection to MetaMask was rejected or failed.');
+                console.error(err);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('connectWalletBtn').onclick = connectWallet;
+            loadCandidates();
+            updateOwnerAndStatus();
+        });
+
+        // Listen for account changes and update UI
+        if (window.ethereum) {
+            window.ethereum.on('accountsChanged', function (accounts) {
+                if (accounts.length > 0) {
+                    userAddress = accounts[0];
+                    document.getElementById('walletAddress').textContent = userAddress;
+                    document.getElementById('connectWalletBtn').textContent = "Connected";
+                    document.getElementById('connectWalletBtn').disabled = true;
+                    signer = provider.getSigner();
+                    contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+                    updateOwnerAndStatus();
+                    loadCandidates();
+                } else {
+                    document.getElementById('walletAddress').textContent = "";
+                    document.getElementById('connectWalletBtn').textContent = "Connect Wallet";
+                    document.getElementById('connectWalletBtn').disabled = false;
+                }
+            });
+        }
+
+        async function updateOwnerAndStatus() {
+            if (!contract) return;
+            try {
+                contractOwner = await contract.owner();
+                document.getElementById('ownerAddress').textContent = contractOwner;
+                if (userAddress && contractOwner.toLowerCase() === userAddress.toLowerCase()) {
+                    document.getElementById('addCandidateSection').style.display = 'block';
+                    document.getElementById('votingStatus').textContent = '';
+                } else {
+                    document.getElementById('addCandidateSection').style.display = 'none';
+                    if (userAddress) {
+                        const voted = await contract.hasVoted(userAddress);
+                        document.getElementById('votingStatus').textContent = voted ? "You have already voted." : "You have not voted yet.";
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function loadCandidates() {
+            const response = await fetch('/api/candidates');
+            const data = await response.json();
+            const container = document.getElementById('candidatesContainer');
+            container.innerHTML = '';
+            let hasVoted = false;
+            let isOwner = false;
+            if (contract && userAddress) {
+                hasVoted = await contract.hasVoted(userAddress);
+                const owner = await contract.owner();
+                isOwner = owner.toLowerCase() === userAddress.toLowerCase();
+            }
+            if (data.success) {
+                document.getElementById('candidateCount').textContent = data.candidates.length;
+                data.candidates.forEach(candidate => {
+                    // Only show vote count to owner
+                    const voteCountHtml = isOwner ? `<p class="vote-count">${candidate.voteCount} votes</p>` : '';
+                    let voteBtn = '';
+                    if (!isOwner) {
+                        voteBtn = (!hasVoted)
+                            ? `<button class="btn btn-primary vote-btn" onclick="castVote(${candidate.id})">Vote</button>`
+                            : `<span class="badge bg-secondary">Voting not allowed</span>`;
+                    }
+                    const candidateHtml = `
+                        <div class="col-md-4">
+                            <div class="candidate-card">
+                                <h3>${candidate.name}</h3>
+                                ${voteCountHtml}
+                                ${voteBtn}
+                            </div>
+                        </div>
+                    `;
+                    container.innerHTML += candidateHtml;
+                });
+                // Show results only for owner
+                if (isOwner) {
+                    document.getElementById('resultSection').style.display = 'block';
+                    // Find max votes for trophy
+                    let maxVotes = 0;
+                    data.candidates.forEach(candidate => {
+                        if (candidate.voteCount > maxVotes) maxVotes = candidate.voteCount;
+                    });
+                    
+                    // Sort candidates by vote count in descending order
+                    const sortedCandidates = [...data.candidates].sort((a, b) => b.voteCount - a.voteCount);
+                    
+                    let resultsHtml = `<div class="table-responsive"><table class="table table-striped table-hover align-middle border rounded shadow" style="overflow:hidden;">
+                        <thead class="table-primary">
+                            <tr>
+                                <th scope="col">Rank</th>
+                                <th scope="col">Candidate</th>
+                                <th scope="col">Votes</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                    sortedCandidates.forEach((candidate, index) => {
+                        const isWinner = candidate.voteCount === maxVotes && maxVotes > 0;
+                        resultsHtml += `<tr${isWinner ? ' style="font-weight:bold; background: #fef9c3;"' : ''}>
+                            <td>${index + 1}</td>
+                            <td>${candidate.name} ${isWinner ? '🏆' : ''}</td>
+                            <td>${candidate.voteCount}</td>
+                        </tr>`;
+                    });
+                    resultsHtml += `</tbody></table></div>`;
+                    document.getElementById('resultsTable').innerHTML = resultsHtml;
+                } else {
+                    document.getElementById('resultSection').style.display = 'none';
+                }
+            }
+        }
+
+        async function castVote(candidateId) {
+            if (!contract) {
+                alert('Please connect your wallet first!');
+                return;
+            }
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('successAlert').style.display = 'none';
+            document.getElementById('errorAlert').style.display = 'none';
+            try {
+                const tx = await contract.vote(candidateId);
+                await tx.wait();
+                // Only show success message if the current user is the one who voted
+                if (userAddress && userAddress.toLowerCase() === (await signer.getAddress()).toLowerCase()) {
+                    document.getElementById('successAlert').style.display = 'block';
+                }
+                await loadCandidates();
+                await updateOwnerAndStatus();
+            } catch (err) {
+                document.getElementById('errorAlert').textContent = err.message || 'Error casting vote. Please try again.';
+                document.getElementById('errorAlert').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        window.castVote = castVote;
+
+        async function addCandidate() {
+            if (!contract) {
+                alert('Please connect your wallet first!');
+                return;
+            }
+            const name = document.getElementById('candidateName').value;
+            const address = document.getElementById('candidateAddress').value;
+            if (!name || !address) {
+                alert('Candidate name and address cannot be empty.');
+                return;
+            }
+            document.getElementById('addCandidateBtn').disabled = true;
+            try {
+                const tx = await contract.addCandidate(name);
+                await tx.wait();
+                document.getElementById('candidateName').value = '';
+                document.getElementById('candidateAddress').value = '';
+                await loadCandidates();
+            } catch (err) {
+                alert(err.message || 'Error adding candidate.');
+            } finally {
+                document.getElementById('addCandidateBtn').disabled = false;
+            }
+        }
+
+        window.addCandidate = addCandidate;
+    </script>
+</body>
+</html> 
